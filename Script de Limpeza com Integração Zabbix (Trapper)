@@ -1,0 +1,34 @@
+<#
+. .SINOPSE
+ Script de Limpeza de Disco com ambiente de métricas para Zabbix Trapper.
+. . .AUTOR
+ Guilherme Catucci
+#>
+
+# Configurações do Zabbix
+$ZabbixSenderPath = "C:\Arquivos de Programas\Zabbix Agent\zabbix_sender.exe"
+$ZabbixServerIP = "192.168.1.100" # IP do seu servidor Zabbix
+$HostNameInZabbix = "Servidor-Arquivos-01" # Nome do Host como cadastrado no Zabbix
+
+# 1. Medir espaço antes da limpeza
+$Antes = (Get-PSDrive C).Livre
+
+# 2. Executivo Limpeza
+tenda {
+ Get-ChildItem "C:\Windows\Temp\*" -Recurso -Força -ErrorAction Continuar Silenciosamente | Remover-Item -Recurso -Força
+ $Status = 0 # Sucesso
+} pegar {
+ $Status = 1 # Erro
+}
+
+# 3. Medir espaço depósito e cálculo ganho (em MB)
+$Depois = (Get-PSDrive C).Livre
+$SpaceFreed = [matemática]::Round(($After - $Before) /1MB, 2)
+
+# 4. Enviar dados para o Zabbix
+# Envia o Status da Limpeza
+& $ZabbixSenderPath -z $ZabbixServerIP -s $HostNameInZabbix -k "script.limpeza.status" -o $Status
+# Envia a quantidade de espaço liberado
+& $ZabbixSenderPath -z $ZabbixServerIP -s $HostNameInZabbix -k "script.limpeza.espaco_liberado" -o $SpaceFreed
+
+Write-Host "Limpeza concluída. $SpaceFreed MB liberados. Dados ambientais ao Zabbix."
