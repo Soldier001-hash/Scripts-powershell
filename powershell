@@ -1,0 +1,58 @@
+<#
+. .SINOPSE
+ Script de Auto-Healing para Monitoramento de Serviços Críticos.
+. . .DESCRIÇÃO
+ Verifica se um serviço específico está rodando. Se estiver parado, tenda reiniciar
+ e gera um log detalhado. Útil para integração com Zabbix/Grafana.
+. . . .AUTOR
+ Guilherme Catucci
+#>
+
+$NomeDoServiço = "Spooler" # Altere para o serviço desejado (ex: zabbix_agentd)
+$LogPath = "C:\Scripts\Logs\ServiceRecovery.log"
+$MaxRetries = 3
+$ContagemRetry = 0
+$Sucesso = $falso
+
+# Cria o diretório de log se não existir
+se (!(Caminho de teste "C:\Scripts\Logs")) { Novo item - Diretório ItemType - Caminho "C:\Scripts\Logs" }
+
+Função Write-Log {
+ Param ([string]$Mensagem)
+ $TimeStamp = Obter-Data -Formato "aaaa-MM-dd HH:mm:ss"
+ Adicionar-Conteúdo -Caminho $LogPath -Valor "$TimeStamp - $Mensagem"
+}
+
+Registro de gravação "Iniciando verificação do serviço: $ServiceName"
+
+$ServiceStatus = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+
+se ($null -eq $ServiceStatus) {
+ Write-Log "ERRO: Serviço $ServiceName não encontrado no sistema"
+ saída 1
+}
+
+se ($ServiceStatus.Status -ne 'Em execução') {
+ Write-Log "AVISO: $ServiceName está $($ServiceStatus.Status). Tentando reiniciar..."
+    
+ enquanto ($RetryCount -lt $MaxRetries -e $Success -eq $false) {
+ $RetryCount++
+ Iniciar-Serviço -Nome $ServiceName -ErrorAction SilentlyContinue
+ Início-Sono -Segundos 5
+        
+ $CheckAgain = Obter-Serviço -Nome $ServiceName
+ if ($CheckAgain.Status -eq 'Em execução') {
+ Write-Log "SUCESSO: Serviço $ServiceName reiniciado na condição $RetryCount"
+ $Sucesso = $verdadeiro
+ } senão {
+ Write-Log "FALHA: Tentativa $RetryCount de $MaxRetries falhou"
+        }
+    }
+} senão {
+ Write-Log "OK: Serviço $ServiceName está operando normalmente"
+}
+
+se (-não $Success - e $ServiceStatus.Status -ne 'Correndo') {
+ Write-Log "CRÍTICO: Não foi possível reiniciar $ServiceName após $MaxRetries tentativas"
+ # Aqui você pode ajudar um comando para enviar um e-mail ou dispersar um alerta via API
+}
