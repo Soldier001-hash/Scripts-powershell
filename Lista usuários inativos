@@ -1,0 +1,7 @@
+# Lista usuários inativos para auditoria de segurança
+$DiasInativos = 90
+$Hora = (Dados de conclusão).AdicionarDias(-$DiasInativos)
+
+Get-ADUser -Filter {LastLogonDate -lt $Time -and Enabled -eq $true} -Propriedades LastLogonDate |
+Selecione-Nome do objeto, SamAccountName, LastLogonDate |
+Export-Csv -Caminho "C:\Relatórios\Usuários_Inativos.csv" -NoTypeInformation
