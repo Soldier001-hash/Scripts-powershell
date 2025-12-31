@@ -1,0 +1,9 @@
+$Source = "C:\Dados\Criticos"
+$Destination = "D:\Backups"
+$Date = Get-Date -Format "yyyy-MM-dd"
+$ZipFile = "$Destination\Backup_$Date.zip"
+
+if (!(Test-Path $Destination)) { New-Item -ItemType Directory -Path $Destination }
+
+Compress-Archive -Path $Source -DestinationPath $ZipFile -Update
+Write-Host "Backup concluído com sucesso em $ZipFile"
