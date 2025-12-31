@@ -1,0 +1,50 @@
+<#
+. .SINOPSE
+ Script de Manutenção Preventiva de Estações e Servidores.
+. . .DESCRIÇÃO
+ Realiza limpeza de temporários, verifica integridade do Windows e saúde física do disco.
+. . . .AUTOR
+ Guilherme Catucci
+#>
+
+$LogPath = "C:\Scripts\Logs\Manutencao_Disco.log"
+se (!(Caminho de teste "C:\Scripts\Logs")) { Novo item - Diretório ItemType - Caminho "C:\Scripts\Logs" }
+
+Função Write-Log {
+ Param ([string]$Mensagem)
+ $TimeStamp = Obter-Data -Formato "aaaa-MM-dd HH:mm:ss"
+ Adicionar-Conteúdo -Caminho $LogPath -Valor "$TimeStamp - $Mensagem"
+ Write-Host $Mensagem -ForegroundColor Ciano
+}
+
+# 1. Limpeza de Arquivos Temporários
+Write-Log "Iniciando limpeza de arquivos temporários..."
+$TempFolders = @("C:\Windows\Temp\*", "C:\Usuários\*\AppData\Local\Temp\*")
+foreach ($Pasta em $TempFolders) {
+ Remover-Item -Caminho $Pasta -Recurso -Força -ErrorAction Continuar Silenciosamente
+}
+Write-Log "Limpeza de temporários concluída"
+
+# 2. Verificação de Saúde do Disco (SMART)
+Write-Log "Verificando status físico dos discos..."
+$DiskHealth = Get-WmiObject -Namespace root\wmi -Class MSStorageDriver_FailurePredictStatus -ErrorAction SilentlyContinue
+se ($DiskHealth.PredictFailure) {
+ Write-Log "ALERTA CRÍTICO: Possível falta física detectada no disco!"
+} senão {
+ Write-Log "Saúde física do disco: OK"
+}
+
+# 3. Verificação de Integridade do Sistema (SFC e DISM)
+# Esses comandos garantem que o SO não tem arquivos corrompidos
+Write-Log "Iniciando reparo de imagem do sistema (DISM)..."
+dism /online /limpar-imagem /restaurar-saúde | Out-Null
+
+Write-Log "Iniciando verificador de arquivos do sistema (SFC)..."
+sfc /scannow | Fora-Nulo
+Write-Log "Verificação de integridade concluída"
+
+# 4. Otimização de Espaço (Limpeza de WinSxS)
+Write-Log "Limpando arquivos obsoletos de atualizações (WinSxS)..."
+dism /online /cleanup-image /startcomponentcleanup /resetbase | Out-Null
+
+Write-Log "Manutação Finalizada com Sucesso"
